@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Kitty! 🐱</title>
+    <style>
+        body {
+            margin: 0;
+            text-align: center;
+            background-color: #ffffff;
+            background-image: 
+                radial-gradient(#ff9a9e 3px, transparent 4px),
+                radial-gradient(#a1c4fd 3px, transparent 4px),
+                radial-gradient(#c2e9fb 3px, transparent 4px);
+            background-size: 100px 100px;
+            background-position: 0 0, 30px 30px, 60px 60px;
+            animation: confettiFall 20s linear infinite;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @keyframes confettiFall {
+            0% { background-position: 0 0, 30px 30px, 60px 60px; }
+            100% { background-position: 200px 200px, 230px 230px, 260px 260px; }
+        }
+
+        /* Add hover effect to canvas */
+        canvas:hover {
+            transform: scale(1.01);
+            transition: transform 0.3s ease;
+        }
+
+        /* Add a container for the game elements */
+        .game-container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(240, 98, 146, 0.2);
+            margin: 20px;
+        }
+
+        h1 {
+            color: #e91e63;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            font-size: 2.5em;
+            margin: 20px 0;
+        }
+
+        canvas {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 3px solid #f06292;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        p {
+            color: #ad1457;
+            font-size: 1.2em;
+            margin: 15px 0;
+        }
+
+        #score {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 2px solid #f06292;
+            font-weight: bold;
+            font-size: 1.4em;
+            margin-top: 20px;
+        }
+
+        /* Add animation for score change */
+        @keyframes scorePopup {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Add new styles */
+        .game-controls {
+            margin: 15px 0;
+        }
+
+        .btn {
+            background: #f06292;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .power-up {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            transition: all 0.3s;
+        }
+
+        @keyframes sparkle {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(180deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add audio element -->
+    <audio id="meowSound" src="https://www.myinstants.com/media/sounds/cat-meow.mp3" preload="auto"></audio>
+
+    <!-- Wrap game elements in container -->
+    <div class="game-container">
+        <h1>🎀 Catch the Kitty! 🐱</h1>
+        <p>Click the cute kitty to score points! 💕</p>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <p id="score">Score: 0 🌟</p>
+        <div class="game-controls">
+            <button class="btn" id="difficulty">Difficulty: Easy</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let score = 0;
+
+        const cat = {
+            x: Math.random() * 350,
+            y: Math.random() * 350,
+            size: 60, // Slightly bigger cat
+            speed: 1000, // Movement speed in milliseconds
+        };
+
+        function drawCat() {
+            const img = new Image();
+            img.src = 'https://cdn-icons-png.flaticon.com/512/1864/1864514.png'; // Cuter cat icon
+            img.onload = () => ctx.drawImage(img, cat.x, cat.y, cat.size, cat.size);
+        }
+
+        function updateCatPosition() {
+            const newX = Math.random() * (canvas.width - cat.size);
+            const newY = Math.random() * (canvas.height - cat.size);
+            
+            // Animate the movement
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            cat.x = newX;
+            cat.y = newY;
+            drawCat();
+        }
+
+        function updateScore() {
+            const scoreElement = document.getElementById('score');
+            scoreElement.innerText = `Score: ${score} 🌟`;
+            scoreElement.style.animation = 'scorePopup 0.3s ease';
+            setTimeout(() => {
+                scoreElement.style.animation = '';
+            }, 300);
+        }
+
+        // Add sound functionality
+        const meowSound = document.getElementById('meowSound');
+        
+        function playMeow() {
+            meowSound.currentTime = 0; // Reset sound to start
+            meowSound.play().catch(error => console.log("Audio play failed:", error));
+        }
+
+        // Simplify game state variables
+        let difficulty = 'easy';
+
+        // Update game configuration
+        const config = {
+            easy: { speed: 1000, points: 1 },
+            medium: { speed: 700, points: 2 },
+            hard: { speed: 400, points: 3 }
+        };
+
+        // Modify click handler for difficulty-based scoring
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            if (
+                clickX >= cat.x &&
+                clickX <= cat.x + cat.size &&
+                clickY >= cat.y &&
+                clickY <= cat.y + cat.size
+            ) {
+                score += config[difficulty].points;
+                playMeow();
+                updateScore();
+                updateCatPosition();
+            }
+        });
+
+        // Add difficulty button handler
+        document.getElementById('difficulty').addEventListener('click', () => {
+            const difficulties = ['easy', 'medium', 'hard'];
+            const currentIndex = difficulties.indexOf(difficulty);
+            difficulty = difficulties[(currentIndex + 1) % 3];
+            document.getElementById('difficulty').textContent = 
+                `Difficulty: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`;
+            
+            // Update cat movement speed
+            clearInterval(moveInterval);
+            cat.speed = config[difficulty].speed;
+            moveInterval = setInterval(updateCatPosition, cat.speed);
+        });
+
+        // Initialize cat movement
+        let moveInterval = setInterval(updateCatPosition, cat.speed);
+    </script>
+</body>
+</html>
